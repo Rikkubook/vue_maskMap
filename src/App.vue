@@ -99,8 +99,20 @@ export default {
   methods:{
     updateMap () {
       // 取臺北市
-      const pharmacies = this.Pharmacy.filter( pharmacyItem=> pharmacyItem.properties.county == this.form.city)
+      const pharmacies = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
       console.log(pharmacies)
+
+      // 添加圖標
+      pharmacies.forEach((pharmacyItem)=>{
+        const { properties, geometry } =pharmacyItem // 可以用解構的方式比較不會那麼長
+        L.marker([ 
+          // pharmacyItem.geometry.coordinates[1],
+          // pharmacyItem.geometry.coordinates[0]
+          geometry.coordinates[1],
+          geometry.coordinates[0]
+        ]).addTo(openStreetMap)
+        .bindPopup(`藥局名稱 ${ properties.name }`) // 點他會有文字內容
+      })
     }
   }
 }
