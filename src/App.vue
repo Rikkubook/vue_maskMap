@@ -12,6 +12,13 @@
         >
           <b-form v-if="show">
             <b-form-group id="input-group-3" label="城市:" label-for="input-city">
+              <!-- <b-form-select
+                id="input-city"
+                v-model="form.city"
+                :options="cityArray"
+                required
+                @change="removeMark();updateMap()"  //監聽改變
+              /> -->
               <b-form-select
                 id="input-city"
                 v-model="form.city"
@@ -99,10 +106,12 @@ export default {
       // areaChose[0].AreaList.forEach((areaItem) => { this.areaArray = [...this.areaArray, { text: areaItem.AreaName, value: areaItem.AreaEngName }] })
       // areaChose[0].AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) }) // 會找多個
       areaChose.AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) }) // 只會找一個
+      this.removeMark()
+      this.updateMap()
     }
   },
   methods:{
-    // Step3 更新圖資
+    // Step1 +Step3 換區域時更新圖資
     updateMap () {
       // 取臺北市
       const pharmacies = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
@@ -118,6 +127,15 @@ export default {
           geometry.coordinates[0]
         ]).addTo(openStreetMap)
         .bindPopup(`藥局名稱 ${ properties.name }`) // 點他會有文字內容
+      })
+    },
+    // Step1 +Step3 換區域時清除圖資
+    removeMark () {
+      // 跑所有圖層
+      openStreetMap.eachLayer((layer)=>{
+        if(layer instanceof L.Marker){
+          openStreetMap.removeLayer(layer)
+        }
       })
     }
   }
