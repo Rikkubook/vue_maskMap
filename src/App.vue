@@ -84,7 +84,7 @@ export default {
     // Step3 產生地圖位置
     openStreetMap = L.map('mapid', {
       center: [25.042474, 121.513729],
-      zoom: 18,
+      zoom: 17,
     })
     // Step3 載入底圖的地圖
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -93,7 +93,7 @@ export default {
     }).addTo(openStreetMap)
 
     // Step3 添加圖標
-    L.marker([25.042474, 121.513729]).addTo(openStreetMap)
+    // L.marker([25.042474, 121.513729]).addTo(openStreetMap)
   },
   watch: {
     // Step1  添加區域
@@ -128,6 +128,9 @@ export default {
         ]).addTo(openStreetMap)
         .bindPopup(`藥局名稱 ${ properties.name }`) // 點他會有文字內容
       })
+
+      // 更新圖資位置(用取得的第一個藥局)
+      this.moveTo(pharmacies[0])
     },
     // Step1 +Step3 換區域時清除圖資
     removeMark () {
@@ -137,6 +140,15 @@ export default {
           openStreetMap.removeLayer(layer)
         }
       })
+    },
+    // Step1 +Step3 移動圖表
+    moveTo ( pharmacy ) {
+      const { properties, geometry } = pharmacy
+      console.log(properties)
+      openStreetMap.panTo([
+        geometry.coordinates[1],
+        geometry.coordinates[0]
+      ])
     }
   }
 }
