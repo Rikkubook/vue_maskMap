@@ -24,6 +24,7 @@
                 v-model="form.city"
                 :options="cityArray"
                 required
+                @change="removeMark();updateMap()"
               />
             </b-form-group>
             <b-form-group id="input-group-3" label="區域:" label-for="input-city">
@@ -32,8 +33,10 @@
                 v-model="form.area"
                 :options="areaArray"
                 required
+                @change="updateAreaMap()"
               />
             </b-form-group>
+
             <b-button type="submit" variant="primary">Submit</b-button>
           </b-form>
         </b-card>
@@ -59,14 +62,15 @@ export default {
   data () {
     return {
       form: {
-        city: '臺北市',
+        city: null,
         area: null
       },
       cityArray: [{ text: '請選擇城市', value: null }],
       areaArray: [{ text: '請選擇區域', value: null }],
       show: true,
       openStreetMap: {},
-      Pharmacy: []
+      Pharmacy: [],
+      PharmacyCity: []
     }
   },
   mounted() {
@@ -78,7 +82,6 @@ export default {
     const api = 'https://raw.githubusercontent.com/kiang/pharmacies/master/json/points.json'
     axios.get(api).then((response) => {
       this.Pharmacy = response.data.features
-      this.updateMap()
     })
 
     // Step3 產生地圖位置
@@ -106,8 +109,8 @@ export default {
       // areaChose[0].AreaList.forEach((areaItem) => { this.areaArray = [...this.areaArray, { text: areaItem.AreaName, value: areaItem.AreaEngName }] })
       // areaChose[0].AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) }) // 會找多個
       areaChose.AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) }) // 只會找一個
-      this.removeMark()
-      this.updateMap()
+      // this.removeMark()
+      // this.updateMap()
     }
   },
   methods:{
@@ -115,7 +118,8 @@ export default {
     updateMap () {
       // 取臺北市
       const pharmacies = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
-      console.log(pharmacies)
+      console.log('updateMap', pharmacies)
+      this.PharmacyCity = pharmacies
 
       // 添加圖標
       pharmacies.forEach((pharmacyItem)=>{
@@ -126,8 +130,32 @@ export default {
           geometry.coordinates[1],
           geometry.coordinates[0]
         ]).addTo(openStreetMap)
-        .bindPopup(`藥局名稱 ${ properties.name }`) // 點他會有文字內容
+        .bindPopup(`
+          <div class="ri-popup">
+            <div class="ri-popup_title">藥局名稱: ${ properties.name }</div>
+            <div class="ri-popup_note">${ properties.note }</div>
+            <div class="ri-popup_address">
+              <span>地址: </span>
+              ${ properties.address }
+            </div>
+            <div class="ri-popup_openTime">
+              <span>營業時間: </span>
+              ${ properties.available }
+            </div>
+            <div class="ri-popup_phone">
+              <span>電話: </span>
+              ${ properties.phone }
+            </div>
+          </div>`
+        ) // 點他會有文字內容
       })
+
+      // 更新圖資位置(用取得的第一個藥局)
+      this.moveTo(pharmacies[0])
+    },
+    updateAreaMap () {
+      const pharmacies = this.PharmacyCity.filter( pharmacyItem => pharmacyItem.properties.town == this.form.area)
+      console.log('updateArea', pharmacies)
 
       // 更新圖資位置(用取得的第一個藥局)
       this.moveTo(pharmacies[0])
@@ -144,7 +172,7 @@ export default {
     // Step1 +Step3 移動圖表
     moveTo ( pharmacy ) {
       const { properties, geometry } = pharmacy
-      console.log(properties)
+      console.log('moveTo', properties)
       openStreetMap.panTo([
         geometry.coordinates[1],
         geometry.coordinates[0]
@@ -166,5 +194,28 @@ export default {
 }
 #mapid {
   width: 100%;
+}
+.ri-popup{
+  font-family:  'Noto Sans TC',  "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  .ri-popup_title{
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  .ri-popup_note{
+    font-weight: 400;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .ri-popup_address,.ri-popup_openTime,.ri-popup_phone{
+    font-weight: 300;
+    font-size: 12px;
+    color: rgb(75, 74, 74);
+    margin-bottom: 5px;
+    span{
+      font-weight: 400;
+      color: #222;
+    }
+  }
 }
 </style>
