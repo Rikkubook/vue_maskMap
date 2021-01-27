@@ -63,40 +63,46 @@ export default {
     }
   },
   mounted() {
+    // Step1 添加下拉選單的城市
     // TWcity.forEach((cityItem) => { this.cityArray = [...this.cityArray, { text: cityItem.CityName, value: cityItem.CityEngName }] })
     TWcity.forEach((cityItem) => { this.cityArray.push({ text: cityItem.CityName, value: cityItem.CityName }) })
 
+    // Step2 載入藥局
     const api = 'https://raw.githubusercontent.com/kiang/pharmacies/master/json/points.json'
     axios.get(api).then((response) => {
       this.Pharmacy = response.data.features
       this.updateMap()
     })
 
-    // 產生地圖位置
+    // Step3 產生地圖位置
     openStreetMap = L.map('mapid', {
       center: [25.042474, 121.513729],
       zoom: 18,
     })
-    // 載入底圖的地圖
+    // Step3 載入底圖的地圖
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
       maxZoom: 20,
     }).addTo(openStreetMap)
 
-    // 添加圖標
+    // Step3 添加圖標
     L.marker([25.042474, 121.513729]).addTo(openStreetMap)
   },
   watch: {
+    // Step1  添加區域
     'form.city' () {
       // console.log(this.form.city)
-      const areaChose = TWcity.filter(cityItem => cityItem.CityName === this.form.city)
+      // const areaChose = TWcity.filter(cityItem => cityItem.CityName === this.form.city) // 會找多個
+      const areaChose = TWcity.find(cityItem => cityItem.CityName === this.form.city) // 只會找一個
       this.form.area = null // 重設
       this.areaArray = [{ text: '請選擇區域', value: null }] // 重設
       // areaChose[0].AreaList.forEach((areaItem) => { this.areaArray = [...this.areaArray, { text: areaItem.AreaName, value: areaItem.AreaEngName }] })
-      areaChose[0].AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) })
+      // areaChose[0].AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) }) // 會找多個
+      areaChose.AreaList.forEach((areaItem) => { this.areaArray.push({ text: areaItem.AreaName, value: areaItem.AreaName }) }) // 只會找一個
     }
   },
   methods:{
+    // Step3 更新圖資
     updateMap () {
       // 取臺北市
       const pharmacies = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
