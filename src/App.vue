@@ -43,16 +43,16 @@
           </div>
           <ul class="ri-sideMenu_list">
             <li v-for="listItem in List" :key="listItem.properties.id">
-              <h2 class="ri-sideMenu_list_title">藥局名稱:</h2>
-              <p class="ri-sideMenu_list_note">口罩販賣時段：星期一~六09:00-11:00</p>
+              <h2 class="ri-sideMenu_list_title">{{ listItem.properties.name }}</h2>
+              <p class="ri-sideMenu_list_note">{{ listItem.properties.note }}</p>
               <p class="ri-sideMenu_list_address">
-                <span>地址: </span>新竹縣新豐鄉建興路二段８１４號
+                <span>地址: </span>{{ listItem.properties.address }}
               </p>
               <p class="ri-sideMenu_list_openTime">
-                <span>營業時間: </span>
+                <span>營業時間:</span>{{ listItem.properties.available }}
               </p>
               <p class="ri-sideMenu_list_phone">
-                <span>電話: </span>
+                <span>電話: </span>{{ listItem.properties.phone }}
               </p>
             </li>
           </ul>
