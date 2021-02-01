@@ -13,8 +13,16 @@
             <h1 class="ri-sideMenu_search_title">
               口罩地圖
             </h1>
-            <b-form>
-              <b-form-group id="input-group-3" label="城市:" label-for="input-city">
+            <b-form @submit.prevent="submitForm()">
+              <b-form-group label="搜尋藥局:" label-for="input-search">
+                <b-form-input
+                  id="input-search"
+                  v-model="form.search"
+                  placeholder="輸入搜尋的藥局"
+                  class="mb-3"
+                  @keyup.enter="searchMap()" />
+              </b-form-group>
+              <b-form-group label="城市:" label-for="input-city">
                 <!-- <b-form-select
                   id="input-city"
                   v-model="form.city"
@@ -26,19 +34,18 @@
                   id="input-city"
                   v-model="form.city"
                   :options="cityArray"
-                  required
                   @change="removeMark();updateMap()"
                 />
               </b-form-group>
-              <b-form-group id="input-group-3" label="區域:" label-for="input-city" class="mb-0">
+              <b-form-group label="區域:" label-for="input-city">
                 <b-form-select
                   id="input-city"
                   v-model="form.area"
                   :options="areaArray"
-                  required
                   @change="updateAreaMap()"
                 />
               </b-form-group>
+              <b-button type="submit" variant="primary" class="w-100">送出</b-button>
             </b-form>
           </div>
           <ul class="ri-sideMenu_list">
@@ -67,7 +74,7 @@
 import L from 'leaflet'
 import TWcity from '@/assets/TWcity.json'
 import axios from 'axios'
-import { BCard, BForm, BFormGroup, BFormSelect } from 'bootstrap-vue'
+import { BCard, BForm, BFormGroup, BFormSelect, BFormInput, BButton  } from 'bootstrap-vue'
 
 console.log(L)
 
@@ -75,10 +82,11 @@ let openStreetMap = {};
 
 export default {
   name: 'App',
-  components: { BCard, BForm, BFormGroup, BFormSelect },
+  components: { BCard, BForm, BFormGroup, BFormSelect, BFormInput, BButton },
   data () {
     return {
       form: {
+        search: '',
         city: null,
         area: null
       },
@@ -132,14 +140,68 @@ export default {
     }
   },
   methods:{
+    // 純搜尋
+    searchMap () {
+      console.log('searchMap',this.form.search)
+      if(this.form.city == null && this.form.area == null){
+        const searchWord = this.Pharmacy.filter(pharmacyItem => pharmacyItem.properties.name.includes(this.form.search))
+        this.List = searchWord
+        this.form.city = searchWord[0].properties.county
+        this.form.area = searchWord[0].properties.town
+        // 更新圖資位置(用取得的第一個藥局)
+        this.moveTo(searchWord[0])
+        this.updateMap()
+        this.updateAreaMap()
+      }else{
+        const searchWord = this.List.filter(pharmacyItem => pharmacyItem.properties.name.includes(this.form.search))
+        const greenIcon = L.icon({
+            iconUrl: '/marker-02.png',
+            iconSize:     [38, 50],
+            iconAnchor:   [25,60],
+            popupAnchor:  [0, -76]
+        })
+        // 添加圖標
+        searchWord.forEach((pharmacyItem)=>{
+          const { properties, geometry } =pharmacyItem // 可以用解構的方式比較不會那麼長
+          L.marker([ 
+            // pharmacyItem.geometry.coordinates[1],
+            // pharmacyItem.geometry.coordinates[0]
+            geometry.coordinates[1],
+            geometry.coordinates[0]
+          ],{
+            icon: greenIcon
+          }).addTo(openStreetMap)
+          .bindPopup(`
+            <div class="ri-popup">
+              <div class="ri-popup_title">藥局名稱: ${ properties.name }</div>
+              <div class="ri-popup_note">${ properties.note }</div>
+              <div class="ri-popup_address">
+                <span>地址: </span>
+                ${ properties.address }
+              </div>
+              <div class="ri-popup_openTime">
+                <span>營業時間: </span>
+                ${ properties.available }
+              </div>
+              <div class="ri-popup_phone">
+                <span>電話: </span>
+                ${ properties.phone }
+              </div>
+            </div>`
+          ) // 點他會有文字內容
+        })
+         this.moveTo(searchWord[0])
+      }
+    },
+    submitForm(){
+    },
     // Step1 +Step3 換區域時更新圖資
     updateMap () {
       // 取臺北市
       const pharmacies = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
       console.log('updateMap', pharmacies)
       this.PharmacyCity = pharmacies
-      
-
+      this.List = pharmacies
       const greenIcon = L.icon({
           iconUrl: '/marker-02.png',
           iconSize:     [38, 50],
@@ -213,9 +275,9 @@ export default {
 <style lang="scss">
 @import '@/assets/sass/all.scss';
 
-// *{
-//   outline: 1px solid red;
-// }
+*{
+  outline: 1px solid red;
+}
 .card-body{
   padding: 0px;
 }
@@ -236,7 +298,7 @@ export default {
 }
 
 .ri-sideMenu_list{
-  height: calc(100vh - 365px);
+  height: calc(100vh - 545px);
   overflow-y: auto;
   padding: 10px;
   background-color: #ffffff;
