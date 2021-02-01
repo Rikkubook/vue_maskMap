@@ -20,7 +20,7 @@
                   v-model="form.search"
                   placeholder="輸入搜尋的藥局"
                   class="mb-3"
-                  @keyup.enter="searchMap()" />
+                />
               </b-form-group>
               <b-form-group label="城市:" label-for="input-city">
                 <!-- <b-form-select
@@ -34,7 +34,7 @@
                   id="input-city"
                   v-model="form.city"
                   :options="cityArray"
-                  @change="removeMark();updateMap()"
+                  required
                 />
               </b-form-group>
               <b-form-group label="區域:" label-for="input-city">
@@ -42,13 +42,14 @@
                   id="input-city"
                   v-model="form.area"
                   :options="areaArray"
-                  @change="updateAreaMap()"
+                  required
                 />
               </b-form-group>
               <b-button type="submit" variant="primary" class="w-100">送出</b-button>
             </b-form>
           </div>
-          <ul class="ri-sideMenu_list">
+          <b-alert show variant="warning" class="ri-alert" v-if="!show">查無此藥局</b-alert>
+          <ul v-if="show" class="ri-sideMenu_list">
             <li v-for="listItem in List" :key="listItem.properties.id">
               <h2 class="ri-sideMenu_list_title">{{ listItem.properties.name }}</h2>
               <p class="ri-sideMenu_list_note">{{ listItem.properties.note }}</p>
@@ -74,7 +75,7 @@
 import L from 'leaflet'
 import TWcity from '@/assets/TWcity.json'
 import axios from 'axios'
-import { BCard, BForm, BFormGroup, BFormSelect, BFormInput, BButton  } from 'bootstrap-vue'
+import { BCard, BForm, BFormGroup, BFormSelect, BFormInput, BButton, BAlert  } from 'bootstrap-vue'
 
 console.log(L)
 
@@ -82,7 +83,7 @@ let openStreetMap = {};
 
 export default {
   name: 'App',
-  components: { BCard, BForm, BFormGroup, BFormSelect, BFormInput, BButton },
+  components: { BCard, BForm, BFormGroup, BFormSelect, BFormInput, BButton, BAlert },
   data () {
     return {
       form: {
@@ -142,66 +143,85 @@ export default {
   methods:{
     // 純搜尋
     searchMap () {
-      console.log('searchMap',this.form.search)
       if(this.form.city == null && this.form.area == null){
+        console.log('searchMap',this.form.search)
         const searchWord = this.Pharmacy.filter(pharmacyItem => pharmacyItem.properties.name.includes(this.form.search))
-        this.List = searchWord
-        this.form.city = searchWord[0].properties.county
-        this.form.area = searchWord[0].properties.town
-        // 更新圖資位置(用取得的第一個藥局)
-        this.moveTo(searchWord[0])
-        this.updateMap()
-        this.updateAreaMap()
+        if(searchWord.length > 0){
+          this.List = searchWord
+
+          // 移除圖標
+          this.removeMark ()
+          // 添加圖標
+          this.addMark(searchWord)
+          // 更新圖資位置(用取得的第一個藥局)
+          this.moveTo(searchWord[0])
+        }else{
+          this.show = false
+          console.log('查無此藥局')
+        }
       }else{
         const searchWord = this.List.filter(pharmacyItem => pharmacyItem.properties.name.includes(this.form.search))
-        const greenIcon = L.icon({
-            iconUrl: '/marker-02.png',
-            iconSize:     [38, 50],
-            iconAnchor:   [25,60],
-            popupAnchor:  [0, -76]
-        })
-        // 添加圖標
-        searchWord.forEach((pharmacyItem)=>{
-          const { properties, geometry } =pharmacyItem // 可以用解構的方式比較不會那麼長
-          L.marker([ 
-            // pharmacyItem.geometry.coordinates[1],
-            // pharmacyItem.geometry.coordinates[0]
-            geometry.coordinates[1],
-            geometry.coordinates[0]
-          ],{
-            icon: greenIcon
-          }).addTo(openStreetMap)
-          .bindPopup(`
-            <div class="ri-popup">
-              <div class="ri-popup_title">藥局名稱: ${ properties.name }</div>
-              <div class="ri-popup_note">${ properties.note }</div>
-              <div class="ri-popup_address">
-                <span>地址: </span>
-                ${ properties.address }
-              </div>
-              <div class="ri-popup_openTime">
-                <span>營業時間: </span>
-                ${ properties.available }
-              </div>
-              <div class="ri-popup_phone">
-                <span>電話: </span>
-                ${ properties.phone }
-              </div>
-            </div>`
-          ) // 點他會有文字內容
-        })
-         this.moveTo(searchWord[0])
+         if(searchWord.length > 0){
+           this.List = searchWord
+
+          // 移除圖標
+          this.removeMark ()
+          // 添加圖標
+          this.addMark(searchWord)
+          // 更新圖資位置(用取得的第一個藥局)
+          this.moveTo(searchWord[0])
+         }else{
+           this.show = false
+           console.log('查無此藥局')
+         }
       }
     },
+    // 送出
     submitForm(){
+      if(this.form.search == ''){
+        this.updateMap()
+      }else{
+        const searchWord = this.List.filter(pharmacyItem => pharmacyItem.properties.name.includes(this.form.search))
+         if(searchWord.length > 0){
+          this.List = searchWord
+
+          // 移除圖標
+          this.removeMark ()
+          // 添加圖標
+          this.addMark(searchWord)
+          // 更新圖資位置(用取得的第一個藥局)
+          this.moveTo(searchWord[0])
+         }else{
+           this.show = false
+           console.log('查無此藥局')
+         }
+      }
     },
     // Step1 +Step3 換區域時更新圖資
     updateMap () {
       // 取臺北市
-      const pharmacies = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
-      console.log('updateMap', pharmacies)
-      this.PharmacyCity = pharmacies
+      const PharmacyCity = this.Pharmacy.filter( pharmacyItem => pharmacyItem.properties.county == this.form.city)
+      const pharmacies = PharmacyCity.filter( pharmacyItem => pharmacyItem.properties.town == this.form.area)
       this.List = pharmacies
+
+      // 移除圖標
+      this.removeMark ()
+      // 添加圖標
+      this.addMark(pharmacies)
+      // 更新圖資位置(用取得的第一個藥局)
+      this.moveTo(pharmacies[0])
+    },
+    // Step1 +Step3 換區域時清除圖資
+    removeMark () {
+      // 跑所有圖層
+      openStreetMap.eachLayer((layer)=>{
+        if(layer instanceof L.Marker){
+          openStreetMap.removeLayer(layer)
+        }
+      })
+    },
+    // Step1 +Step3 添加圖標圖資
+    addMark(pharmacies){
       const greenIcon = L.icon({
           iconUrl: '/marker-02.png',
           iconSize:     [38, 50],
@@ -239,25 +259,6 @@ export default {
         ) // 點他會有文字內容
       })
 
-      // 更新圖資位置(用取得的第一個藥局)
-      this.moveTo(pharmacies[0])
-    },
-    updateAreaMap () {
-      const pharmacies = this.PharmacyCity.filter( pharmacyItem => pharmacyItem.properties.town == this.form.area)
-      console.log('updateArea', pharmacies)
-      this.List = pharmacies
-
-      // 更新圖資位置(用取得的第一個藥局)
-      this.moveTo(pharmacies[0])
-    },
-    // Step1 +Step3 換區域時清除圖資
-    removeMark () {
-      // 跑所有圖層
-      openStreetMap.eachLayer((layer)=>{
-        if(layer instanceof L.Marker){
-          openStreetMap.removeLayer(layer)
-        }
-      })
     },
     // Step1 +Step3 移動圖表
     moveTo ( pharmacy ) {
@@ -288,6 +289,10 @@ export default {
 .ri-sideMenu{
   width: 400px;
   height: 100vh;
+}
+.ri-alert{
+  margin: 10px;
+  border-radius: 5px;
 }
 .ri-sideMenu_search{
   padding: 20px 10px 20px;
