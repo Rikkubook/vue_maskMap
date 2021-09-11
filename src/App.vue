@@ -276,9 +276,9 @@ export default {
 <style lang="scss">
 @import '@/assets/sass/all.scss';
 
-*{
-  outline: 1px solid red;
-}
+// *{
+//   outline: 1px solid red;
+// }
 .card-body{
   padding: 0px;
 }
