@@ -11,7 +11,7 @@
         >
           <div class="ri-sideMenu_search">
             <h1 class="ri-sideMenu_search_title">
-              口罩地圖
+              口罩地圖v2
             </h1>
             <b-form @submit.prevent="submitForm()">
               <b-form-group label="搜尋藥局:" label-for="input-search">
