@@ -223,7 +223,7 @@ export default {
     // Step1 +Step3 添加圖標圖資
     addMark(pharmacies){
       const greenIcon = L.icon({
-          iconUrl: '/marker-02.png',
+          iconUrl: 'marker-02.png',
           iconSize:     [38, 50],
           iconAnchor:   [25,60],
           popupAnchor:  [0, -76]
